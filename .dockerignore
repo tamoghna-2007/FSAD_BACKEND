@@ -1,0 +1,11 @@
+target
+.git
+.gitignore
+.classpath
+.project
+.settings
+.metadata
+.vscode
+README.md
+HELP.md
+DATABASE_FIXES_SUMMARY.md
