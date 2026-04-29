@@ -11,6 +11,8 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -43,6 +45,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleDataIntegrityError(DataIntegrityViolationException ex,
             HttpServletRequest request) {
         return buildErrorResponse(HttpStatus.CONFLICT, "Database constraint violation", request.getRequestURI());
+    }
+
+    @ExceptionHandler({ NoResourceFoundException.class, NoHandlerFoundException.class })
+    public ResponseEntity<Map<String, Object>> handleMissingEndpoint(Exception ex, HttpServletRequest request) {
+        return buildErrorResponse(HttpStatus.NOT_FOUND, "Requested endpoint was not found", request.getRequestURI());
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

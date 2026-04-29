@@ -104,27 +104,48 @@ public class AuthServiceImpl implements AuthService {
                 .build();
     }
 
-            @Override
-            public AuthResponse verifyOtp(VerifyOtpRequest request) {
+    @Override
+    public AuthResponse verifyOtp(VerifyOtpRequest request) {
+        try {
             User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-            validateOtp(user, request.getOtp());
+            String providedOtp = request.getOtp();
+            String storedOtp = user.getOtp();
+
+            if (providedOtp == null || providedOtp.isBlank()) {
+                throw new IllegalArgumentException("OTP is required");
+            }
+
+            if (storedOtp == null || storedOtp.isBlank()) {
+                throw new IllegalArgumentException("OTP is not generated. Please request a new OTP");
+            }
+
+            validateOtp(user, providedOtp);
 
             user.setIsVerified(true);
             user.setOtp(null);
             user.setOtpGeneratedTime(null);
-            userRepository.save(user);
+            User savedUser = userRepository.save(user);
+
+            String token = jwtService.generateToken(savedUser);
+           // String token = jwtService.generateToken(savedUser.getEmail());
 
             return AuthResponse.builder()
-                .message("OTP verified successfully")
-                .userId(user.getId())
-                .name(user.getName())
-                .email(user.getEmail())
-                .role(user.getRole())
-                .token(null)
-                .build();
-            }
+                    .message("OTP verified successfully")
+                    .userId(savedUser.getId())
+                    .name(savedUser.getName())
+                    .email(savedUser.getEmail())
+                    .role(savedUser.getRole())
+                    .token(token)
+                    .build();
+        } catch (IllegalArgumentException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            LOGGER.error("Error while verifying OTP for email: {}", request.getEmail(), ex);
+            throw new IllegalStateException("Failed to verify OTP. Please try again", ex);
+        }
+    }
 
             @Override
             public AuthResponse resendOtp(ResendOtpRequest request) {
